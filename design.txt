@@ -1,0 +1,32 @@
+draw-and-guess game
+-------------------
+
+# Frontend handles:
+1. Drawing interaction through a canvas, sends updated brushstrokes to server
+   - Send the brushstrokes to server who broadcasts it to the other connected websockets
+   - Send the strokes in batches & if buffer limit is not reached within 1s,
+     dump the queue
+   - Fill bucket
+2. Receives state changes from backend:
+   - Current player list
+   - Player left
+   - Player joined
+   - Player sends an answer
+   - Turn finished, transfer to next player
+
+# Backend handles:
+
+x Add player to room
+x Broadcast messages to players
+x Remove player from room
+- When player joins, request canvas state from a user and send to newly joined player
+  (we don't store the canvas state on the server)
+
+- Deploy the backend to an Amazon EC2 instance
+
+TODO:
+
+- Request canvas state upon new player
+- Create logic for the guessing & the round in general
+- Cycle players when finished their round
+- Add colors, fill bucket, brush size

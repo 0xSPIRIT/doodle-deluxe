@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <title> doodle-deluxe </title>
+  </head>
+  <body>
+    <label> Username </label>
+    <input type="text" id="username"></input>
+    <label> Room </label>
+    <input type="text" id="room"></input>
+    <button id="join"> Join Room </button>
+    <br><br>
+    <canvas id="canvas" width="500" height="300" style="border:1px solid black;"></canvas>
+    <p> Connected Players: </p>
+    <ul id="players-list">
+    </ul>
+    <script>
+      const joinButton = document.getElementById("join");
+
+      let players = [];
+      let player_drawing_idx = -1;
+
+      let username = null;
+      let room = null;
+
+      let inRoom = false;
+
+      let ws = null; // websocket
+
+      function joinRoom() {
+        ws = new WebSocket(`http://127.0.0.1:8000/ws/${room}?username=${username}`);
+
+        console.log("Attempting to join room");
+
+        inRoom = true;
+
+        ws.addEventListener("open", () => {
+          console.log("CONNECTED");
+
+          pingInterval = setInterval(() => {
+            console.log("SENT: ping");
+            ws.send(JSON.stringify({"type": "ping"}));
+          }, 1000);
+
+          fetch(`http://127.0.0.1:8000/game/${room}/players`)
+            .then(response => response.json())
+            .then(data => {
+              players = data;
+              renderPlayers();
+            });
+        });
+
+        ws.addEventListener("message", e => {
+          try {
+            const data = JSON.parse(e.data);
+
+            receiveMessage(data);
+          } catch (error) {
+            console.error("Error parsing JSON: ", error);
+          }
+        });
+
+        ws.addEventListener("close", e => {
+          console.log("DISCONNECT -- Reason: ", e.reason);
+          clearInterval(pingInterval);
+        });
+      }
+
+      joinButton.addEventListener("click", e => {
+        username = document.getElementById("username").value;
+        room = document.getElementById("room").value;
+
+        console.log("username: " + username);
+        console.log("room: " + room);
+
+        if (!username || !room) {
+          console.log("You must set room / username before joining a room!");
+          return;
+        }
+
+        joinRoom(username, room);
+      });
+
+      const canvas = document.getElementById("canvas");
+
+      const width = canvas.width;
+      const height = canvas.height;
+
+      let mouseDown = false;
+      let px = 0, py = 0;
+
+      const ctx = canvas.getContext("2d");
+
+      // Set line width
+      ctx.lineWidth = 10;
+      ctx.lineJoin = "round";
+
+      canvas.addEventListener("mousedown", (event) => {
+        px = event.offsetX;
+        py = event.offsetY;
+        mouseDown = true;
+      });
+
+      const stopMouse = (event) => { mouseDown = false; };
+
+      let count = 0;
+
+      canvas.addEventListener("mouseup", stopMouse);
+      canvas.addEventListener("mouseleave", stopMouse);
+
+      function drawStroke(x0, y0, x1, y1) {
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x1, y1);
+        ctx.closePath();
+        ctx.stroke();
+      }
+
+      function renderPlayers() {
+        console.log("player:", players);
+        const list = document.getElementById("players-list");
+        list.innerHTML = players.map(p => `<li>${p.name} | Score: ${p.score}</li>`).join("");
+      }
+
+      function receiveMessage(data) {
+        switch (data.type) {
+          case "player_joined":
+            console.log("Player joined:", data.player);
+
+            if (data.player !== username) {
+              players.push({"name": data.player, "score": 0, "solved": false});
+              renderPlayers();
+            }
+
+            break;
+          case "player_left":
+            console.log("Player left:", data.player);
+
+            if (data.player !== username) {
+              players = players.filter(p => p.name !== data.player);
+              renderPlayers();
+            }
+
+            break;
+          case "stroke":
+            console.log("GOT STROKE: ", data);
+
+            if (data.player === username)
+              break;
+
+            drawStroke(data.px, data.py, data.x, data.y);
+            break;
+          case "guess":
+            break;
+        }
+      }
+
+      canvas.addEventListener("mousemove", (event) => {
+        if (!inRoom)
+          return;
+
+        if (mouseDown) {
+          const x = event.offsetX;
+          const y = event.offsetY;
+
+          if (x < 0 || y < 0 || x >= width || y >= height)
+            return;
+
+          const stroke_message = {
+            "type": "stroke",
+            "player": username,
+            "px": px,
+            "py": py,
+            "x": x,
+            "y": y
+          };
+
+          // This sends the stroke to the server, which will then broadcast
+          // to all other players.
+          ws.send(JSON.stringify(stroke_message));
+
+          drawStroke(px, py, x, y);
+
+          count++;
+          //console.log(count);
+
+          px = x;
+          py = y;
+        }
+      });
+    </script>
+  </body>
+</html>
