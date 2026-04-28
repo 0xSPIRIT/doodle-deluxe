@@ -1,194 +1,362 @@
 <!DOCTYPE html>
-
 <html>
   <head>
-    <title> doodle-deluxe </title>
+    <title>Doodle Deluxe</title>
+    <link href="https://fonts.googleapis.com/css2?family=Boogaloo&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --bg: #1a1a2e;
+        --surface: #16213e;
+        --card: #0f3460;
+        --accent: #e94560;
+        --accent2: #f5a623;
+        --accent3: #4ecdc4;
+        --text: #eaeaea;
+        --text-muted: #8892a4;
+        --border: rgba(255,255,255,0.08);
+        --radius: 16px;
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Nunito', sans-serif;
+        min-height: 100vh;
+        background-image: radial-gradient(ellipse at 20% 20%, rgba(233,69,96,0.08) 0%, transparent 50%),
+                          radial-gradient(ellipse at 80% 80%, rgba(78,205,196,0.08) 0%, transparent 50%);
+      }
+
+      header {
+        text-align: center;
+        padding: 24px 0 12px;
+      }
+
+      header h1 {
+        font-family: 'Boogaloo', cursive;
+        font-size: 3rem;
+        letter-spacing: 2px;
+        background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent3));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        filter: drop-shadow(0 2px 12px rgba(233,69,96,0.3));
+      }
+
+      /* Join bar */
+      #join-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        justify-content: center;
+        padding: 12px 24px;
+        flex-wrap: wrap;
+      }
+
+      .input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .input-group label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-muted);
+        font-weight: 700;
+      }
+
+      input[type="text"] {
+        background: var(--surface);
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        color: var(--text);
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.95rem;
+        padding: 8px 14px;
+        outline: none;
+        transition: border-color 0.2s;
+        width: 160px;
+      }
+
+      input[type="text"]:focus {
+        border-color: var(--accent3);
+      }
+
+      input:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .btn {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 700;
+        font-size: 0.9rem;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 20px;
+        cursor: pointer;
+        transition: transform 0.1s, opacity 0.2s, box-shadow 0.2s;
+        letter-spacing: 0.5px;
+      }
+
+      .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+      .btn:active { transform: translateY(0); }
+      .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+      .btn-primary {
+        background: linear-gradient(135deg, var(--accent), #c73652);
+        color: white;
+      }
+
+      .btn-secondary {
+        background: linear-gradient(135deg, var(--accent3), #3ab5ad);
+        color: #0f3460;
+      }
+
+      .btn-ready {
+        background: linear-gradient(135deg, var(--accent2), #e0901a);
+        color: #1a1a2e;
+        align-self: center;
+      }
+
+      /* Main layout */
+      #game-area {
+        display: flex;
+        gap: 16px;
+        padding: 0 24px 24px;
+        justify-content: center;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+
+      /* Left column */
+      #left-col {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      /* Status bar */
+      #status-bar {
+        background: var(--surface);
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      #status {
+        font-weight: 700;
+        font-size: 1rem;
+        color: var(--accent3);
+      }
+
+      #answer {
+        font-family: 'Boogaloo', cursive;
+        font-size: 1.3rem;
+        color: var(--accent2);
+        letter-spacing: 1px;
+      }
+
+      /* Canvas */
+      #canvas-wrapper {
+        background: white;
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 3px var(--border);
+      }
+
+      #canvas { display: block; cursor: crosshair; }
+
+      /* Right column */
+      #right-col {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 260px;
+      }
+
+      .panel {
+        background: var(--surface);
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+
+      .panel-header {
+        background: var(--card);
+        padding: 8px 16px;
+        font-family: 'Boogaloo', cursive;
+        font-size: 1rem;
+        letter-spacing: 1px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        border-bottom: 1.5px solid var(--border);
+      }
+
+      /* Players list */
+      #players-list {
+        list-style: none;
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      #players-list li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 10px;
+        border-radius: 8px;
+        font-size: 0.88rem;
+        font-weight: 600;
+        background: rgba(255,255,255,0.04);
+        transition: background 0.2s;
+      }
+
+      #players-list li:hover { background: rgba(255,255,255,0.08); }
+
+      .player-score {
+        font-family: 'Boogaloo', cursive;
+        font-size: 1rem;
+        color: var(--accent2);
+      }
+
+      /* Chat */
+      #chat-panel {
+        display: flex;
+        flex-direction: column;
+        height: 280px;
+      }
+
+      #chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--card) transparent;
+      }
+
+      #chat-messages p {
+        font-size: 0.83rem;
+        line-height: 1.4;
+        color: var(--text);
+        word-break: break-word;
+      }
+
+      #chat-messages p.system {
+        color: var(--accent3);
+        font-style: italic;
+        font-size: 0.8rem;
+      }
+
+      #chat-messages p.correct {
+        color: var(--accent2);
+        font-weight: 700;
+      }
+
+      #chat-input-row {
+        display: flex;
+        border-top: 1.5px solid var(--border);
+      }
+
+      #chat-input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        color: var(--text);
+        font-size: 0.88rem;
+        padding: 10px 12px;
+        width: auto;
+      }
+
+      #chat-input:focus { border-color: transparent; }
+
+      #chat-send {
+        background: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 0 0 calc(var(--radius) - 2px) 0;
+        padding: 0 16px;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 700;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      #chat-send:hover { background: #c73652; }
+      #chat-send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: var(--card); border-radius: 4px; }
+    </style>
   </head>
   <body>
-    <label> Username </label>
-    <input type="text" id="username"></input>
-    <label> Room </label>
-    <input type="text" id="room"></input>
-    <button id="join"> Join Room </button>
-    <br><br>
-    <canvas id="canvas" width="500" height="300" style="border:1px solid black;"></canvas>
-    <p> Connected Players: </p>
-    <ul id="players-list">
-    </ul>
-    <script>
-      const joinButton = document.getElementById("join");
+    <header>
+      <h1>Doodle Deluxe</h1>
+    </header>
 
-      let players = [];
-      let player_drawing_idx = -1;
+    <div id="join-bar">
+      <div class="input-group">
+        <label>Username</label>
+        <input type="text" id="username" />
+      </div>
+      <div class="input-group">
+        <label>Room</label>
+        <input type="text" id="room" />
+      </div>
+      <div class="input-group" style="justify-content: flex-end;">
+        <label>&nbsp;</label>
+        <div style="display:flex; gap:10px;">
+        <button id="join" class="btn btn-primary">Join Room</button>
+        <button id="ready" class="btn btn-ready">I'm Ready</button>
+        </div>
+      </div>
+    </div>
 
-      let username = null;
-      let room = null;
+    <div id="game-area">
+      <div id="left-col">
+        <div id="status-bar">
+          <span id="status">Waiting for the game to begin...</span>
+          <span id="answer"></span>
+        </div>
+        <div id="canvas-wrapper">
+          <canvas id="canvas" width="500" height="300"></canvas>
+        </div>
+      </div>
 
-      let inRoom = false;
+      <div id="right-col">
+        <div class="panel">
+          <div class="panel-header">Players</div>
+          <ul id="players-list"></ul>
+        </div>
 
-      let ws = null; // websocket
-
-      function joinRoom() {
-        ws = new WebSocket(`http://127.0.0.1:8000/ws/${room}?username=${username}`);
-
-        console.log("Attempting to join room");
-
-        inRoom = true;
-
-        ws.addEventListener("open", () => {
-          console.log("CONNECTED");
-
-          pingInterval = setInterval(() => {
-            console.log("SENT: ping");
-            ws.send(JSON.stringify({"type": "ping"}));
-          }, 1000);
-
-          fetch(`http://127.0.0.1:8000/game/${room}/players`)
-            .then(response => response.json())
-            .then(data => {
-              players = data;
-              renderPlayers();
-            });
-        });
-
-        ws.addEventListener("message", e => {
-          try {
-            const data = JSON.parse(e.data);
-
-            receiveMessage(data);
-          } catch (error) {
-            console.error("Error parsing JSON: ", error);
-          }
-        });
-
-        ws.addEventListener("close", e => {
-          console.log("DISCONNECT -- Reason: ", e.reason);
-          clearInterval(pingInterval);
-        });
-      }
-
-      joinButton.addEventListener("click", e => {
-        username = document.getElementById("username").value;
-        room = document.getElementById("room").value;
-
-        console.log("username: " + username);
-        console.log("room: " + room);
-
-        if (!username || !room) {
-          console.log("You must set room / username before joining a room!");
-          return;
-        }
-
-        joinRoom(username, room);
-      });
-
-      const canvas = document.getElementById("canvas");
-
-      const width = canvas.width;
-      const height = canvas.height;
-
-      let mouseDown = false;
-      let px = 0, py = 0;
-
-      const ctx = canvas.getContext("2d");
-
-      // Set line width
-      ctx.lineWidth = 10;
-      ctx.lineJoin = "round";
-
-      canvas.addEventListener("mousedown", (event) => {
-        px = event.offsetX;
-        py = event.offsetY;
-        mouseDown = true;
-      });
-
-      const stopMouse = (event) => { mouseDown = false; };
-
-      let count = 0;
-
-      canvas.addEventListener("mouseup", stopMouse);
-      canvas.addEventListener("mouseleave", stopMouse);
-
-      function drawStroke(x0, y0, x1, y1) {
-        ctx.beginPath();
-        ctx.moveTo(x0, y0);
-        ctx.lineTo(x1, y1);
-        ctx.closePath();
-        ctx.stroke();
-      }
-
-      function renderPlayers() {
-        console.log("player:", players);
-        const list = document.getElementById("players-list");
-        list.innerHTML = players.map(p => `<li>${p.name} | Score: ${p.score}</li>`).join("");
-      }
-
-      function receiveMessage(data) {
-        switch (data.type) {
-          case "player_joined":
-            console.log("Player joined:", data.player);
-
-            if (data.player !== username) {
-              players.push({"name": data.player, "score": 0, "solved": false});
-              renderPlayers();
-            }
-
-            break;
-          case "player_left":
-            console.log("Player left:", data.player);
-
-            if (data.player !== username) {
-              players = players.filter(p => p.name !== data.player);
-              renderPlayers();
-            }
-
-            break;
-          case "stroke":
-            console.log("GOT STROKE: ", data);
-
-            if (data.player === username)
-              break;
-
-            drawStroke(data.px, data.py, data.x, data.y);
-            break;
-          case "guess":
-            break;
-        }
-      }
-
-      canvas.addEventListener("mousemove", (event) => {
-        if (!inRoom)
-          return;
-
-        if (mouseDown) {
-          const x = event.offsetX;
-          const y = event.offsetY;
-
-          if (x < 0 || y < 0 || x >= width || y >= height)
-            return;
-
-          const stroke_message = {
-            "type": "stroke",
-            "player": username,
-            "px": px,
-            "py": py,
-            "x": x,
-            "y": y
-          };
-
-          // This sends the stroke to the server, which will then broadcast
-          // to all other players.
-          ws.send(JSON.stringify(stroke_message));
-
-          drawStroke(px, py, x, y);
-
-          count++;
-          //console.log(count);
-
-          px = x;
-          py = y;
-        }
-      });
-    </script>
+        <div class="panel" id="chat-panel">
+          <div class="panel-header">Chat / Guesses</div>
+          <div id="chat-messages"></div>
+          <div id="chat-input-row">
+            <input type="text" id="chat-input" placeholder="Type a guess..." />
+            <button id="chat-send">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="script.js"></script>
   </body>
 </html>

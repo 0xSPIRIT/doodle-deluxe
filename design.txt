@@ -19,14 +19,20 @@ draw-and-guess game
 x Add player to room
 x Broadcast messages to players
 x Remove player from room
-- When player joins, request canvas state from a user and send to newly joined player
+x When player joins, request canvas state from a user and send to newly joined player
   (we don't store the canvas state on the server)
 
 - Deploy the backend to an Amazon EC2 instance
 
 TODO:
 
-- Request canvas state upon new player
-- Create logic for the guessing & the round in general
-- Cycle players when finished their round
+x Request canvas state upon new player
+x Create logic for the guessing & the round in general
+x Cycle players when finished their round
+x Only allow game to begin with >= 2 players
+x Display error message if having the same username
+- Add timer to the rounds
+- Different rooms, creation and removal
+- If room is empty, delete all data associated with it
 - Add colors, fill bucket, brush size
+- Make your own better frontend
