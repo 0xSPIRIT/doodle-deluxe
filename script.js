@@ -211,6 +211,7 @@ canvas.addEventListener("mousedown", (event) => {
   px = event.offsetX;
   py = event.offsetY;
   mouseDown = true;
+  doStroke(event);
 });
 
 const stopMouse = (event) => { mouseDown = false; };
@@ -220,12 +221,24 @@ let count = 0;
 canvas.addEventListener("mouseup", stopMouse);
 canvas.addEventListener("mouseleave", stopMouse);
 
+function drawPoint(x, y) {
+  ctx.arc(x0, y1, ctx.lineWidth / 5, 0, Math.PI * 2);
+  ctx.fillStyle = ctx.strokeStyle;
+  ctx.fill();
+}
+
+// TODO: Fix
 function drawStroke(x0, y0, x1, y1) {
   ctx.beginPath();
-  ctx.moveTo(x0, y0);
-  ctx.lineTo(x1, y1);
-  ctx.closePath();
-  ctx.stroke();
+
+  if (x0 == x1 && y0 == y1) {
+    drawPoint(x0, y0);
+  } else {
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x1, y1);
+    ctx.closePath();
+    ctx.stroke();
+  }
 }
 
 function renderUI() {
@@ -408,6 +421,36 @@ function receiveMessage(data) {
   }
 }
 
+function doStroke(mouseEvent) {
+  const x = event.offsetX;
+  const y = event.offsetY;
+
+  if (x < 0 || y < 0 || x >= width || y >= height)
+    return;
+
+  const stroke_message = {
+    "type": "stroke",
+    "player": username,
+    "px": px,
+    "py": py,
+    "x": x,
+    "y": y
+  };
+
+  // This sends the stroke to the server, which will then broadcast
+  // to all other players.
+  ws.send(JSON.stringify(stroke_message));
+
+  console.log(`Draw stroke: ${px} ${py} ${x} ${y}`);
+  drawStroke(px, py, x, y);
+
+  count++;
+  //console.log(count);
+
+  px = x;
+  py = y;
+}
+
 canvas.addEventListener("mousemove", (event) => {
   if (!inRoom)
     return;
@@ -416,31 +459,6 @@ canvas.addEventListener("mousemove", (event) => {
     return;
 
   if (mouseDown) {
-    const x = event.offsetX;
-    const y = event.offsetY;
-
-    if (x < 0 || y < 0 || x >= width || y >= height)
-      return;
-
-    const stroke_message = {
-      "type": "stroke",
-      "player": username,
-      "px": px,
-      "py": py,
-      "x": x,
-      "y": y
-    };
-
-    // This sends the stroke to the server, which will then broadcast
-    // to all other players.
-    ws.send(JSON.stringify(stroke_message));
-
-    drawStroke(px, py, x, y);
-
-    count++;
-    //console.log(count);
-
-    px = x;
-    py = y;
+    doStroke(event);
   }
 });

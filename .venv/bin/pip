@@ -1,4 +1,4 @@
-#!/home/spirit/work/doodle/.venv/bin/python3
+#!/home/spiritwolf/work/proj/doodle/.venv/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys
