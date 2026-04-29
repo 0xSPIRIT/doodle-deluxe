@@ -31,8 +31,10 @@ x Create logic for the guessing & the round in general
 x Cycle players when finished their round
 x Only allow game to begin with >= 2 players
 x Display error message if having the same username
-- Add timer to the rounds
+x Add timer to the rounds
+- Solve the time drift between clients by syncing time with the server somehow
 - Different rooms, creation and removal
 - If room is empty, delete all data associated with it
 - Add colors, fill bucket, brush size
 - Make your own better frontend
+- Deploy

@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from dataclasses import dataclass, field
+import threading
+from typing import Optional
 
 import random
 
@@ -81,6 +83,12 @@ class Room:
     def get_current_player_name(self) -> str:
         return self.players[self.current_drawing].name
 
+    def end_round(self):
+        # Reset all the flags
+        for p in self.players:
+            p.solved = False
+            p.ready_for_round = False
+
     def begin_round(self):
         self.answer = pick_random_word()
         self.current_drawing = (self.current_drawing + 1) % len(self.players)
@@ -93,6 +101,7 @@ def get_room_by_id(room_id: int) -> Room:
 r = Room(id=100)
 rooms.append(r)
 
+# TODO: Move all the websocket logic into the ConnectionManager
 # Holds a dictionary of lists of websocket connections; key=room_id
 class ConnectionManager:
     def __init__(self):
@@ -103,6 +112,12 @@ class ConnectionManager:
             self.connections[room_id] = {}
     
         self.connections[room_id][username] = ws
+
+    async def end_round(self, ws: WebSocket, room_id: int, time_expired: bool):
+        room = get_room_by_id(room_id)
+        room.end_round()
+        complete_message = { "type": "round_complete", "time_expired": time_expired }
+        await manager.broadcast(room_id, complete_message)
 
     def disconnect(self, room_id: int, username: str, ws: WebSocket):
         # Remove from connections list
@@ -158,6 +173,8 @@ async def websocket_endpoint(websocket: WebSocket, room_id: int, username: str):
                 continue
 
             match data["type"]:
+                case "timer_expired":
+                    await manager.end_round(websocket, room_id, True)
                 case "ready":
                     msg = { "type": "ready", "player": username }
                     await manager.broadcast(room_id, msg)
@@ -184,7 +201,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: int, username: str):
                 case "stroke":
                     await manager.broadcast(room_id, data)
                 case "guess":
-                    guess = data["text"]
+                    guess = data["text"].lower()
 
                     if room.check_guess(guess):
                         score = 0
@@ -211,15 +228,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: int, username: str):
                             all_solved = False
 
                     if all_solved:
-                        # Reset all the flags
-                        for p in room.players:
-                            p.solved = False
-                            p.ready_for_round = False
-
-                        # Broadcast that the round has completed
-                        complete_message = { "type": "round_complete" }
-                        await manager.broadcast(room_id, complete_message)
-
+                        await manager.end_round(websocket, room_id, False)
                         # Now we wait for all the clients to say ready again
     except WebSocketDisconnect:
         manager.disconnect(room_id, username, websocket)

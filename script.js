@@ -12,13 +12,33 @@ let ready = false;
 let playing = false;
 let answer = ""; // What to draw
 
+let solved = false;
+
 const chat_input = document.getElementById("chat-input");
 const chat_send = document.getElementById("chat-send");
 
+const ready_button = document.getElementById("ready");
+
 const status_elem = document.getElementById("status");
 
-function setError(err) {
-  status_elem.textContent = err;
+const timerElem = document.getElementById("timer");
+
+const MAX_TIME = 60;
+
+let timeLeft = MAX_TIME;
+let timerInterval = null;
+
+function setPlaying(p) {
+  playing = p;
+  ready_button.disabled = p;
+}
+
+function setStatus(stat) {
+  status_elem.textContent = stat;
+}
+
+function displayAnswer() {
+  setStatus("The answer was " + answer + "!");
 }
 
 function setPlayerDrawing(new_player_drawing) {
@@ -34,7 +54,7 @@ function setPlayerDrawing(new_player_drawing) {
     content = player_drawing + " is drawing";
   }
 
-  status_elem.textContent = content;
+  setStatus(content);
 }
 
 let inRoom = false;
@@ -43,7 +63,27 @@ let ws = null; // websocket
 
 let receivedSync = false;
 
-const ready_button = document.getElementById("ready");
+function startTimer(seconds) {
+  timeLeft = seconds;
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    timerElem.textContent = `${timeLeft}s`;
+
+    if (timeLeft <= 0) {
+      timeLeft = 0;
+      clearInterval(timerInterval);
+      const msg = { type: "timer_expired" };
+      ws.send(JSON.stringify(msg));
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  timeLeft = 0;
+  timerElem.innerHTML = "";
+  clearInterval(timerInterval);
+}
 
 ready_button.addEventListener("click", () => {
   if (inRoom && !ready) {
@@ -51,10 +91,11 @@ ready_button.addEventListener("click", () => {
   }
 });
 
-function pushMessage(text) {
+function pushMessage(text, color = null) {
   const messages = document.getElementById("chat-messages");
   const line = document.createElement("p");
   line.style.margin = "4px 0";
+  line.style.color = color ?? "var(--text)";
   line.textContent = text;
   messages.appendChild(line);
   messages.scrollTop = messages.scrollHeight;
@@ -127,13 +168,12 @@ function joinRoom() {
     inRoom = false;
     console.log("DISCONNECT -- Reason: ", e.reason);
     if (e.reason) {
-      setError(e.reason);
+      setStatus(e.reason);
     }
     clearInterval(pingInterval);
     players = [];
-    playing = false;
+    setPlaying(false);
     renderUI();
-    console.log(document.getElementById("players-list").innerHTML);
   });
 }
 
@@ -200,7 +240,7 @@ function renderUI() {
       } else if (p.solved) {
       readyBadge = `<span style="color: #32a852; font-size: 0.75rem; font-weight: 700;">Solved</span>`;
       }
-    }  else if (p.ready_for_round) {
+    } else if (p.ready_for_round) {
       readyBadge = `<span style="color: #4ecdc4; font-size: 0.75rem; font-weight: 700;">Ready</span>`;
     } else {
       readyBadge = `<span style="color: #8892a4; font-size: 0.75rem;">waiting...</span>`;
@@ -221,14 +261,14 @@ function renderUI() {
   }).join("");
 
   const answer_elem = document.getElementById("answer");
-  answer_elem.textContent = answer ? "Draw: " + answer : "";
+  answer_elem.textContent = (playing && answer && username === player_drawing) ? "Draw: " + answer : "";
 }
 
 function receiveMessage(data) {
   switch (data.type) {
     case "error":
       console.log("Got error ", data.error);
-      setError(data.error);
+      setStatus(data.error);
       break;
     case "player_joined":
       console.log("Player joined:", data.player);
@@ -271,23 +311,27 @@ function receiveMessage(data) {
       renderUI();
       break;
     case "round_begin":
-      pushMessage("Begin round!");
+      pushMessage("Begin round!", "#3eb85f");
+
+      startTimer(MAX_TIME);
 
       setPlayerDrawing(data.player_drawing);
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+      // Answer is stored for everyone, including non-drawing players,
+      // so we can display it if we win
+      answer = data.answer;
+
       if (player_drawing === username) {
-        answer = data.answer;
         chat_input.disabled = chat_send.disabled = true;
         pushMessage("You are drawing!");
       } else {
-        answer = "";
         chat_input.disabled = chat_send.disabled = false;
         pushMessage(data.player_drawing + " is drawing!");
       }
 
-      playing = true;            
+      setPlaying(true);
 
       renderUI();
       break;
@@ -298,20 +342,26 @@ function receiveMessage(data) {
       drawStroke(data.px, data.py, data.x, data.y);
       break;
     case "round_complete":
+      const wasDrawing = player_drawing === username;
       ready = false;
-      playing = false;
-      answer = "";
+      setPlaying(false);
       setPlayerDrawing("");
+      stopTimer();
+
+      const messageColor = (solved || wasDrawing) ? "#3eb85f" : "var(--accent2)";
+
+      displayAnswer();
 
       for (let i = 0; i < players.length; i++) {
         players[i].ready_for_round = false;
         players[i].solved = false;
       }
+      solved = false;
 
       renderUI();
 
-      pushMessage("Round complete!");
-      pushMessage("Press \"I\'m ready\" to proceed!");
+      pushMessage("Round complete!", messageColor);
+      pushMessage("Press \"I\'m ready\" to proceed!", "var(--accent2)");
 
       chat_input.disabled = chat_send.disabled = false;
       break;
@@ -334,11 +384,15 @@ function receiveMessage(data) {
 
       if (data.player !== username) {
         player = data.player;
+        displayAnswer();
       } else {
         chat_input.disabled = chat_send.disabled = true;
+        solved = true;
       }
 
-      pushMessage(`${player} guessed correctly!`);
+      console.log("S:", solved);
+
+      pushMessage(`${player} guessed correctly!`, "#3eb85f");
       break;
     case "canvas_sync": // Receive the canvas sync
       if (receivedSync)
