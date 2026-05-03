@@ -68,10 +68,13 @@ class Room:
         self.players = [p for p in self.players if p.name != name]
 
     def check_guess(self, guess: str) -> bool:
+        # Convert to lowercase and remove all spaces -- "thunder storm" => "thunderstorm"
+        guess = guess.lower().replace(" ", "")
+
         if self.answer == "":
             return False
 
-        return self.answer == guess
+        return self.answer.lower() == guess
 
     def get_player(self, name: str) -> Player:
         for p in self.players:
@@ -201,7 +204,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: int, username: str):
                 case "stroke":
                     await manager.broadcast(room_id, data)
                 case "guess":
-                    guess = data["text"].lower()
+                    guess = data["text"]
 
                     if room.check_guess(guess):
                         score = 0
