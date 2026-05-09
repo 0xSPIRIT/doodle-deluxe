@@ -1,7 +1,7 @@
 const MAX_TIME = 60;
 
 export class Room {
-  constructor(roomId, username) {
+  constructor(roomId, username, triggerRedraw) {
     this.roomId = roomId;
     this.username = username;
     this.players = [];
@@ -9,6 +9,7 @@ export class Room {
     this.answer = "";
     this.timeLeft = MAX_TIME;
     this.timerInterval = null;
+    this.triggerRerender = triggerRedraw;
   }
 
   joinPlayer(player) {
@@ -61,12 +62,14 @@ export class Room {
 
   startTimer() {
     this.timeLeft = MAX_TIME;
+
     if (this.timerInterval)
       clearInterval(this.timerInterval);
 
     this.timerInterval = setInterval(() => {
       this.timeLeft--;
-      //timerElem.textContent = `${timeLeft}s`;
+
+      this.triggerRerender();
 
       if (this.timeLeft <= 0) {
         this.timeLeft = 0;

@@ -86,6 +86,10 @@ class Canvas {
 
   doStroke({x, y, px, py}) {}
 
+  clear() {
+    this.ctx.clearRect(0, 0, this.width, this.height);
+  }
+
   getImageDataBase64() {
     return this.canvas.toDataURL("image/png");
   }
@@ -129,13 +133,19 @@ export const readyButton = document.getElementById("ready");
 
 const answerElem = document.getElementById("answer");
 const statusElem = document.getElementById("status");
+const timerElem  = document.getElementById("timer");
 
 export function setReadyButtonDisabled(disabled) {
   readyButton.disabled = disabled;
 }
 
-export function renderUI({statusMessage, players, player_drawing, playing, answer, username}) {
+// TODO: Maybe use a UIState class as a parameter in here instead?
+
+export function renderUI({statusMessage, players, player_drawing, playing, answer, username, timeLeft}) {
   statusElem.textContent = statusMessage;
+
+  if (players == null)
+    return;
 
   list.innerHTML = players.map(p => {
     let readyBadge = "";
@@ -165,6 +175,12 @@ export function renderUI({statusMessage, players, player_drawing, playing, answe
         </div>
       </li>`;
   }).join("");
+
+  if (timeLeft > 0) {
+    timerElem.textContent = `${timeLeft}s`;
+  } else {
+    timerElem.innerHTML = "";
+  }
 
   answerElem.textContent = (playing && answer && username === player_drawing) ? "Draw: " + answer : "";
 }

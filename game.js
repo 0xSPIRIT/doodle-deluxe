@@ -25,10 +25,33 @@ export class Game {
 
   clickJoinButton() {}
 
+  rerender() {
+    const r = this.room;
+    let players = null, playerDrawing = null, answer = null, username = null, timeLeft = null;
+
+    if (r) {
+      players = r.players;
+      playerDrawing = r.playerDrawing;
+      answer = r.answer;
+      username = r.username;
+      timeLeft = r.timeLeft;
+    }
+
+    renderUI({
+      statusMessage: this.statusMsg,
+      players: players,
+      player_drawing: playerDrawing,
+      playing: this.isPlaying,
+      answer: answer,
+      username: username,
+      timeLeft: timeLeft
+    });
+  }
+
   joinRoom(roomId, username) {
     this.clearState();
 
-    this.room = new Room(roomId, username);
+    this.room = new Room(roomId, username, () => this.rerender());
     this.room.onTimerExpiry = () => this.onTimerExpiry();
     this.connection = new Connection(roomId, username);
     this.connection.onOpen = () => this.onOpen();
@@ -56,7 +79,7 @@ export class Game {
       .then(data => {
         if (this.connection.isConnected()) {
           this.room.players = data;
-          renderUI({statusMessage: this.statusMsg, players: data, player_drawing: "", playing: false, answer: "", username: this.room.username});
+          this.rerender();
         }
       });
   }
@@ -66,6 +89,7 @@ export class Game {
     console.log("DISCONNECT -- Reason: ", e.reason);
     if (e.reason) {
       this.setStatus(e.reason);
+      this.rerender();
     }
     clearInterval(this.pingInterval);
     this.isPlaying = false;
@@ -117,6 +141,8 @@ export class Game {
 
   beginRound({ player_drawing, answer }) {
     chat.pushMessage("Begin round!", "#3eb85f");
+
+    canvas.clear();
 
     this.room.beginRound({ player_drawing, answer });
 
@@ -251,13 +277,6 @@ export class Game {
         break;
     }
 
-    renderUI({
-      statusMessage: this.statusMsg,
-      players: this.room.players,
-      player_drawing: this.room.playerDrawing,
-      playing: this.isPlaying,
-      answer: this.room.answer,
-      username: this.room.username
-    });
+    this.rerender();
   }
 }

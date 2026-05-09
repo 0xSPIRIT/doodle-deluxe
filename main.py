@@ -96,13 +96,10 @@ class Room:
         self.answer = pick_random_word()
         self.current_drawing = (self.current_drawing + 1) % len(self.players)
 
-rooms = []
+rooms: dict[int, Room] = {}
 
-def get_room_by_id(room_id: int) -> Room:
-    return next((r for r in rooms if r.id == room_id), None)
-
-r = Room(id=100)
-rooms.append(r)
+def get_room_by_id(room_id: int) -> Room | None:
+    return rooms.get(room_id)
 
 # TODO: Move all the websocket logic into the ConnectionManager
 # Holds a dictionary of lists of websocket connections; key=room_id
@@ -151,16 +148,20 @@ def read_players_state(room_id: int):
 
 @app.websocket("/ws/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: int, username: str):
+    global rooms
+
     await websocket.accept()
+
+    rooms = {k : v for k, v in rooms.items() if len(v.players) > 0}
 
     room = get_room_by_id(room_id)
 
     if room is None:
-        await websocket.close(code=1008, reason="Room not found")
-        return
+        # Create the room
+        rooms[room_id] = room = Room(id=room_id)
 
     if room.has_player(username):
-        await websocket.close(code=1008, reason="Username already taken")
+        await websocket.close(code=1008, reason="Username already taken. Please try again.")
         return
 
     await manager.connect(room_id, username, websocket)
