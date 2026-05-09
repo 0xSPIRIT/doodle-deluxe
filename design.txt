@@ -36,6 +36,7 @@ x Refactor the client side
 - Solve the time drift between clients by syncing time with the server somehow
 x Different rooms, creation and removal
 x If room is empty, delete all data associated with it
+- Handle timeout properly!
 - Add colors, fill bucket, brush size
 - Make your own better frontend
 - Deploy

@@ -5,7 +5,7 @@ export class Room {
     this.roomId = roomId;
     this.username = username;
     this.players = [];
-    this.playerDrawing = null;
+    this.playerDrawing = "";
     this.answer = "";
     this.timeLeft = MAX_TIME;
     this.timerInterval = null;

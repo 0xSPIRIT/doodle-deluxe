@@ -101,8 +101,6 @@ rooms: dict[int, Room] = {}
 def get_room_by_id(room_id: int) -> Room | None:
     return rooms.get(room_id)
 
-# TODO: Move all the websocket logic into the ConnectionManager
-# Holds a dictionary of lists of websocket connections; key=room_id
 class ConnectionManager:
     def __init__(self):
         self.connections: dict[int, dict[str, list[WebSocket]]] = {}
@@ -112,12 +110,6 @@ class ConnectionManager:
             self.connections[room_id] = {}
     
         self.connections[room_id][username] = ws
-
-    async def end_round(self, ws: WebSocket, room_id: int, time_expired: bool):
-        room = get_room_by_id(room_id)
-        room.end_round()
-        complete_message = { "type": "round_complete", "time_expired": time_expired }
-        await manager.broadcast(room_id, complete_message)
 
     def disconnect(self, room_id: int, username: str, ws: WebSocket):
         # Remove from connections list
@@ -178,7 +170,9 @@ async def websocket_endpoint(websocket: WebSocket, room_id: int, username: str):
 
             match data["type"]:
                 case "timer_expired":
-                    await manager.end_round(websocket, room_id, True)
+                    room.end_round()
+                    complete_message = { "type": "round_complete", "time_expired": time_expired }
+                    await manager.broadcast(room_id, complete_message)
                 case "ready":
                     msg = { "type": "ready", "player": username }
                     await manager.broadcast(room_id, msg)
