@@ -1,4 +1,4 @@
-import { chat, canvas, joinButton, setReadyButtonDisabled, renderUI } from "./ui.js";
+import { toolbar, chat, canvas, joinButton, setReadyButtonDisabled, renderUI } from "./ui.js";
 import { Connection } from "./connection.js";
 import { Room } from "./room.js";
 
@@ -11,6 +11,14 @@ export class Game {
 
     joinButton.addEventListener("click", () => this.clickJoinButton());
     canvas.doStroke = ({x, y, px, py}) => this.doStroke({x, y, px, py});
+    canvas.onFill = (color) => {
+      this.connection.send({ type: "fill", color: color });
+    };
+
+    toolbar.onColorChange = (color) => {
+      canvas.ctx.strokeStyle = color;
+      canvas.ctx.fillStyle = color;
+    }
   }
 
   clearState() {
@@ -150,11 +158,13 @@ export class Game {
       chat.setInputDisabled(true);
       chat.setSendDisabled(true);
       canvas.setDisabled(false);
+      toolbar.disabled = false;
       chat.pushMessage("You are drawing!");
     } else {
       chat.setInputDisabled(false);
       chat.setSendDisabled(false);
       canvas.setDisabled(true);
+      toolbar.disabled = true;
       chat.pushMessage(player_drawing + " is drawing!");
     }
 
@@ -218,6 +228,7 @@ export class Game {
     const stroke_message = {
       "type": "stroke",
       "player": this.room.username,
+      "color": canvas.ctx.fillStyle,
       "px": px,
       "py": py,
       "x": x,
@@ -228,7 +239,7 @@ export class Game {
     // to all other players.
     this.connection.send(stroke_message);
 
-    canvas.drawStroke(px, py, x, y);
+    canvas.drawStroke(canvas.ctx.fillStyle, px, py, x, y);
   }
 
   handleMessage(data) {
@@ -255,7 +266,11 @@ export class Game {
         if (data.player === this.room.username)
           break;
 
-        canvas.drawStroke(data.px, data.py, data.x, data.y);
+        canvas.drawStroke(data.color, data.px, data.py, data.x, data.y);
+        break;
+      case "fill":
+        console.log("GOT: " + data.color);
+        canvas.fill(data.color);
         break;
       case "round_complete":
         console.log("Round complete!");

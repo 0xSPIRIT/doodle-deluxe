@@ -1,3 +1,7 @@
+import { Toolbar } from "./toolbar.js";
+
+export const toolbar = new Toolbar();
+
 class Chat {
   constructor() {
     this.chat_input    = document.getElementById("chat-input");
@@ -54,6 +58,9 @@ class Canvas {
     this.ctx.lineJoin = "round";
 
     this.canvas.addEventListener("mousedown", (event) => {
+      if (this.canvas.disabled)
+        return;
+
       this.px = event.offsetX;
       this.py = event.offsetY;
       this.mouseDown = true;
@@ -61,7 +68,12 @@ class Canvas {
       const x = event.offsetX;
       const y = event.offsetY;
 
-      this.doStroke({x: x, y: y, px: this.px, py: this.py});
+      if (toolbar.activeTool === "bucket") {
+        this.fill(toolbar.activeColor);
+        this.onFill(toolbar.activeColor);
+      } else {
+        this.doStroke({x: x, y: y, px: this.px, py: this.py});
+      }
 
       this.px = x;
       this.py = y;
@@ -72,11 +84,16 @@ class Canvas {
     this.canvas.addEventListener("mouseup", stopMouse);
     this.canvas.addEventListener("mouseleave", stopMouse);
     this.canvas.addEventListener("mousemove", (event) => {
+      if (this.canvas.disabled)
+        return;
+
       if (this.mouseDown) {
         const x = event.offsetX;
         const y = event.offsetY;
 
-        this.doStroke({x: x, y: y, px: this.px, py: this.py});
+        if (toolbar.activeTool === "pen") {
+          this.doStroke({x: x, y: y, px: this.px, py: this.py});
+        }
 
         this.px = x;
         this.py = y;
@@ -85,6 +102,12 @@ class Canvas {
   }
 
   doStroke({x, y, px, py}) {}
+  onFill(color) {}
+
+  fill(color) {
+    this.ctx.fillStyle = color;
+    this.ctx.fillRect(0, 0, this.width, this.height);
+  }
 
   clear() {
     this.ctx.clearRect(0, 0, this.width, this.height);
@@ -104,8 +127,12 @@ class Canvas {
     this.ctx.fill();
   }
 
-  // TODO: Fix
-  drawStroke(x0, y0, x1, y1) {
+  drawStroke(color, x0, y0, x1, y1) {
+    if (this.ctx.fillStyle !== color) {
+      this.ctx.strokeStyle = color;
+      this.ctx.fillStyle = color;
+    }
+
     this.ctx.beginPath();
 
     if (x0 == x1 && y0 == y1) {
@@ -123,6 +150,7 @@ class Canvas {
   }
 }
 
+console.log("This happened!");
 export const chat = new Chat();
 export const canvas = new Canvas();
 

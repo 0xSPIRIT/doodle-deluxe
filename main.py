@@ -201,6 +201,8 @@ async def websocket_endpoint(websocket: WebSocket, room_id: int, username: str):
                     await manager.send_to_user(room_id, data["player_to"], data)
                 case "stroke":
                     await manager.broadcast(room_id, data)
+                case "fill":
+                    await manager.broadcast(room_id, data)
                 case "guess":
                     guess = data["text"]
 
