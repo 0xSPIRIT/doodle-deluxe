@@ -116,6 +116,11 @@ class ConnectionManager:
         if room_id in self.connections:
             self.connections[room_id].pop(username, None)
 
+    async def end_round(self, room: Room):
+        room.end_round()
+        complete_message = { "type": "round_complete" }
+        await self.broadcast(room.id, complete_message)
+
     async def broadcast(self, room_id: int, msg: dict):
         for ws in self.connections[room_id].values():
             await ws.send_json(msg)
@@ -170,9 +175,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: int, username: str):
 
             match data["type"]:
                 case "timer_expired":
-                    room.end_round()
-                    complete_message = { "type": "round_complete", "time_expired": time_expired }
-                    await manager.broadcast(room_id, complete_message)
+                    await manager.end_round(room)
                 case "ready":
                     msg = { "type": "ready", "player": username }
                     await manager.broadcast(room_id, msg)
@@ -225,10 +228,14 @@ async def websocket_endpoint(websocket: WebSocket, room_id: int, username: str):
                         if p.name != drawer and not p.solved:
                             all_solved = False
 
+                    print(f"Solved {all_solved}")
+
                     if all_solved:
-                        await manager.end_round(websocket, room_id, False)
+                        await manager.end_round(room)
                         # Now we wait for all the clients to say ready again
     except WebSocketDisconnect:
+        print(f"User {username} removed from room {room_id}")
         manager.disconnect(room_id, username, websocket)
         room.remove_player(username)
+        rooms = {k : v for k, v in rooms.items() if len(v.players) > 0}
         await manager.broadcast(room_id, {"type": "player_left", "player": username })

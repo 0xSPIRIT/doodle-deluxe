@@ -258,6 +258,7 @@ export class Game {
         canvas.drawStroke(data.px, data.py, data.x, data.y);
         break;
       case "round_complete":
+        console.log("Round complete!");
         this.endRound();
         this.hasSolved = false;
         break;
