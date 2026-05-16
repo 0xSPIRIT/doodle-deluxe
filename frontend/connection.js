@@ -1,3 +1,5 @@
+import { ROUTE_BACKEND_SERVER } from "./route.js";
+
 export class Connection {
   constructor(roomId, username) {
     this.roomId = roomId;
@@ -9,7 +11,7 @@ export class Connection {
   connect() {
     console.log("username is ", this.username, "room id is ", this.roomId);
     this.inRoom = true;
-    this.ws = new WebSocket(`ws://127.0.0.1:8000/ws/${this.roomId}?username=${this.username}`);
+    this.ws = new WebSocket(`ws://${ROUTE_BACKEND_SERVER}/ws/${this.roomId}?username=${this.username}`);
 
     this.ws.addEventListener("open", () => this.onOpen());
     this.ws.addEventListener("message", e => {

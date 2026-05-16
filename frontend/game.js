@@ -2,6 +2,8 @@ import { toolbar, chat, canvas, joinButton, setReadyButtonDisabled, renderUI } f
 import { Connection } from "./connection.js";
 import { Room } from "./room.js";
 
+import { ROUTE_BACKEND_SERVER } from "./route.js";
+
 export class Game {
   constructor() {
     this.room = null;
@@ -82,7 +84,7 @@ export class Game {
       this.connection.send({type: "ping"});
     }, 1000);
 
-    fetch(`http://127.0.0.1:8000/game/${this.room.roomId}/players`)
+    fetch(`http://${ROUTE_BACKEND_SERVER}/game/${this.room.roomId}/players`)
       .then(response => response.json())
       .then(data => {
         if (this.connection.isConnected()) {
