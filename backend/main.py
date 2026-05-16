@@ -35,7 +35,7 @@ def pick_random_word() -> str:
 # TODO: In prod, change this to my server address
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "https://0xspirit.github.io/doodle-deluxe"],
     allow_methods=["*"],
     allow_headers=["*"]
 )
