@@ -21,6 +21,7 @@ class Chat {
     line.style.margin = "4px 0"; line.style.color = color ?? "var(--text)";
     line.textContent = text;
     this.chat_messages.appendChild(line);
+    this.chat_messages.scrollTop = this.chat_messages.scrollHeight;
   }
 
   send() {
