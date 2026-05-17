@@ -84,7 +84,7 @@ export class Game {
       this.connection.send({type: "ping"});
     }, 1000);
 
-    fetch(`http://${ROUTE_BACKEND_SERVER}/game/${this.room.roomId}/players`)
+    fetch(`https://${ROUTE_BACKEND_SERVER}/game/${this.room.roomId}/players`)
       .then(response => response.json())
       .then(data => {
         if (this.connection.isConnected()) {
