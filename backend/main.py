@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from dataclasses import dataclass, field
 import threading
 from typing import Optional
@@ -34,7 +36,7 @@ def pick_random_word() -> str:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://0xspirit.github.io"],
+    allow_origins=["http://localhost:3000", "https://spirit-wolf.duckdns.org"],
     allow_methods=["*"],
     allow_headers=["*"]
 )
@@ -133,7 +135,11 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-@app.get("/game/{room_id}/players")
+@app.get("/")
+def root():
+    return HTMLResponse("<h1>Welcome to my website!</h1><a href=\"/doodle\">Doodle</a>")
+
+@app.get("/doodlebackend/game/{room_id}/players")
 def read_players_state(room_id: int):
     room = get_room_by_id(room_id)
 
@@ -142,9 +148,11 @@ def read_players_state(room_id: int):
     else:
         raise HTTPException(status_code=404, detail="Room not found")
 
-@app.websocket("/ws/{room_id}")
+@app.websocket("/doodlebackend/ws/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: int, username: str):
     global rooms
+
+    print(f"I see {username} trying to enter room {room_id}")
 
     await websocket.accept()
 
@@ -240,3 +248,5 @@ async def websocket_endpoint(websocket: WebSocket, room_id: int, username: str):
         room.remove_player(username)
         rooms = {k : v for k, v in rooms.items() if len(v.players) > 0}
         await manager.broadcast(room_id, {"type": "player_left", "player": username })
+
+app.mount("/doodle", StaticFiles(directory="frontend", html=True), name="frontend")
